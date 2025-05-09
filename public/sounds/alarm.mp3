@@ -1,0 +1,78 @@
+@extends('layouts.app')
+
+@section('content')
+    {{-- ... Votre code existant ... --}}
+
+    <!-- Audio pour l'alarme - Version optimisée -->
+    <audio id="alarm" preload="auto">
+        <source src="{{ asset('sounds/alarm.mp3') }}" type="audio/mpeg">
+        Votre navigateur ne supporte pas l'élément audio.
+    </audio>
+
+    <script>
+        // Configuration
+        const TOTAL_TIME = 40; // 40 secondes pour le quiz
+        let timeLeft = TOTAL_TIME;
+        let timerActive = true;
+        const startTime = new Date().getTime();
+
+        // Éléments DOM
+        const countdownElement = document.getElementById('time-display');
+        const alarmElement = document.getElementById('alarm');
+        const quizForm = document.getElementById('quiz-form');
+
+        // Initialisation audio
+        function initAudio() {
+            alarmElement.volume = 0.7; // Réglage volume (0.0 à 1.0)
+            alarmElement.load(); // Précharge le son
+            
+            // Débloque l'audio au premier clic utilisateur (pour les restrictions navigateurs)
+            document.body.addEventListener('click', () => {
+                alarmElement.play().then(() => {
+                    alarmElement.pause();
+                    alarmElement.currentTime = 0;
+                }).catch(e => console.log("Audio débloqué"));
+            }, { once: true });
+        }
+
+        // Fonction pour jouer l'alarme
+        function playAlarm() {
+            alarmElement.currentTime = 0; // Réinitialise le son
+            alarmElement.play().catch(e => {
+                console.error("Erreur de lecture:", e);
+                // Fallback visuel si l'audio échoue
+                flashCountdownBox();
+            });
+        }
+
+        // Fallback visuel
+        function flashCountdownBox() {
+            const countdownBox = document.getElementById('countdown-box');
+            let flashes = 0;
+            const flashInterval = setInterval(() => {
+                countdownBox.classList.toggle('bg-danger');
+                if (++flashes >= 6) clearInterval(flashInterval);
+            }, 500);
+        }
+
+        // Fonction principale de mise à jour du timer
+        function updateTimer() {
+            if (!timerActive) return;
+
+            const elapsedSeconds = Math.floor((new Date().getTime() - startTime) / 1000);
+            timeLeft = Math.max(0, TOTAL_TIME - elapsedSeconds);
+            countdownElement.textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                timerActive = false;
+                clearInterval(timerInterval);
+                playAlarm();
+                disableQuiz(); // Votre fonction existante pour désactiver le quiz
+            }
+        }
+
+        // Initialisation
+        initAudio();
+        const timerInterval = setInterval(updateTimer, 200);
+    </script>
+@endsection
